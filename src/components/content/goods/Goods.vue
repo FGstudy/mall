@@ -1,6 +1,6 @@
 <template>
   <div class="goods">
-    <goods-item v-for="item in goods" :goods-item="item" class="item"/> 
+    <goods-item v-for="(item,index) in goods" :goods-item="item" class="item" :key="index"/> 
   </div>
 </template>
 
@@ -22,13 +22,13 @@ props: {
 }
 </script>
 
-<style>
+<style scoped>
 .goods{
   display: flex;
   flex-wrap: wrap;
   margin-top: 10px;
   padding: 5px;
-  justify-content: space-around
+  justify-content: space-around;
 }
 
 .goods .item {

@@ -3,15 +3,19 @@
     <nav-bar class="home-nav">
       <div slot="center">购物街</div>
     </nav-bar>
-    <scroll :probe-type="3" 
-            :pull-up-load="true"
-            ref="scroll"
-            class="content"
-            @scroll="contentScroll">
-      <home-swiper :banners="banners">{{banners}}</home-swiper>
+    <tab-control @tabClick="tabClick" class="tab-control" v-show="isTabShow" ref="tabControl1"></tab-control>
+    <scroll
+      :probe-type="3"
+      :pull-up-load="true"
+      ref="scroll"
+      class="content"
+      @scroll="contentScroll"
+      @pullingUp="loadMore"
+    >
+      <home-swiper :banners="banners" @swiperImageLoad="swiperImageLoad">{{banners}}</home-swiper>
       <recommend-view :recommends="recommends"></recommend-view>
       <feature></feature>
-      <tab-control @tabClick="tabClick"></tab-control>
+      <tab-control @tabClick="tabClick" ref="tabControl2"></tab-control>
       <goods :goods="goods[currentType].list"></goods>
     </scroll>
     <back-top @click.native="backClick" v-show="isShowBackTop"></back-top>
@@ -27,10 +31,10 @@ import NavBar from "components/common/navbar/NavBar";
 import TabControl from "components/content/tabcontrol/TabControl";
 import Goods from "components/content/goods/Goods";
 import Scroll from "components/common/scroll/Scroll";
-import BackTop from "components/content/backtop/BackTop";
-
 
 import { getMultiData, getHomeGoods } from "network/home";
+import { debounce } from "common/utils";
+import {backTopMixin} from "common/mixin"
 
 export default {
   name: "Home",
@@ -42,8 +46,8 @@ export default {
     TabControl,
     Goods,
     Scroll,
-    BackTop
   },
+  mixins:[backTopMixin],
   data() {
     return {
       banners: [],
@@ -63,7 +67,9 @@ export default {
         }
       },
       currentType: "pop",
-      isShowBackTop: false
+      tabOffsetTop: 0,
+      isTabShow: false,
+      saveY: 0
     };
   },
   computed: {
@@ -77,6 +83,19 @@ export default {
     this._getHomeGoods("pop");
     this._getHomeGoods("new");
     this._getHomeGoods("sell");
+  },
+  mounted() {
+    const refresh = debounce(this.$refs.scroll.refresh, 50);
+    this.$bus.$on("imgLoad", () => {
+      refresh();
+    });
+  },
+  activated() {
+    this.$refs.scroll.scrollTo(0, this.saveY, 0);
+    this.$refs.scroll.refresh();
+  },
+  deactivated() {
+    this.saveY = this.$refs.scroll.getScrollY();
   },
   methods: {
     /**
@@ -94,14 +113,22 @@ export default {
           this.currentType = "sell";
           break;
       }
+
+      this.$refs.TabControl.currentIndex = index;
+      this.$refs.TabContro2.currentIndex = index;
     },
 
-    backClick(){
-      this.$refs.scroll.scrollTo(0,0)
+    contentScroll(position) {
+      this.isShowBackTop = -position.y > 1000;
+      this.isTabShow = -position.y > this.tabOffsetTop;
     },
 
-    contentScroll(position){
-      this.isShowBackTop = (-position.y) > 1000
+    loadMore() {
+      this._getHomeGoods(this.currentType);
+    },
+
+    swiperImageLoad() {
+      this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop;
     },
 
     /**
@@ -123,6 +150,8 @@ export default {
       getHomeGoods(type, page).then(res => {
         this.goods[type].list.push(...res.data.list);
         this.goods[type].page += 1;
+
+        this.$refs.scroll.finishPullUp();
       });
     }
   }
