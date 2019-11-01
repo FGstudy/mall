@@ -32,7 +32,7 @@ export default {
 }
 .nav {
   background-color: var(--color-tint);
-  color:var(--color-high-text);
+  color:#fff;
   height: 44px;
   position: relative;
   z-index: 10;
