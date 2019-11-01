@@ -25,7 +25,7 @@ export function request(options) {
         // 1.创建axios的实例对象
         const instance = axios.create({
 
-            baseURL: "暂不公布",
+            baseURL: "该接口暂不提供",
             timeout: 5000
         })
 
